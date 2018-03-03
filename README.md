@@ -35,4 +35,4 @@ while time.time() - start < 5:
 gazetracker.stop()
 ```
 
-Have fun controlling everything with your eye
+Have fun controlling everything with your eye!
