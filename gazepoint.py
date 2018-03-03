@@ -51,11 +51,11 @@ class GazePoint(threading.Thread):
 
 if __name__ == '__main__':
 
-	gazepoint = GazePoint()
+	gazetracker = GazePoint()
 
 	start = time.time()
 	while time.time() - start < 5:
-		print gazepoint.get_gaze_position()
+		print gazetracker.get_gaze_position()
 		time.sleep(0.1)
 
-	gazepoint.stop()
+	gazetracker.stop()
