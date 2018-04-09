@@ -1,6 +1,12 @@
 # gazepoint
 Python library to get gaze point from gazepoint device GP3
 
+## Installation
+
+You need lxml to launch:
+
+```pip install lxml```
+
 ## Setting up your gazepoint device
 
 Follow the instruction at this link: http://www.gazept.com/dl/gazepoint_quick_start.pdf
