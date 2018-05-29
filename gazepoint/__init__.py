@@ -1,2 +1,1 @@
-
-from gazepoint import GazePoint
+from .gazepoint import GazePoint

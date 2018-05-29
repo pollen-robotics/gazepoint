@@ -1,9 +1,10 @@
 import time
 import threading
-from tools import OpenGazeTracker
+
+from .tools import OpenGazeTracker
+
 
 class GazePoint(threading.Thread):
-
     def __init__(self, ip='127.0.0.1', port=4242):
         threading.Thread.__init__(self)
         self.daemon = True
@@ -28,13 +29,13 @@ class GazePoint(threading.Thread):
         self.close()
 
     def open(self, ip, port):
-        print 'Setting Up Gaze Point device, this takes about 10 seconds'
+        print('Setting Up Gaze Point device, this takes about 10 seconds')
         self.tracker = OpenGazeTracker(ip=ip, port=port)
         self.tracker.calibrate()
         self.tracker.enable_send_data(True)
 
     def close(self):
-        print 'Closing connection to Gaze Point device, this takes about 5 seconds'
+        print('Closing connection to Gaze Point device, this takes about 5 seconds')
         self.tracker.enable_send_data(False)
         self.tracker.close()
 
@@ -50,12 +51,11 @@ class GazePoint(threading.Thread):
 
 
 if __name__ == '__main__':
-
     gazetracker = GazePoint()
 
     start = time.time()
     while time.time() - start < 5:
-        print gazetracker.get_gaze_position()
+        print(gazetracker.get_gaze_position())
         time.sleep(0.1)
 
     gazetracker.stop()
