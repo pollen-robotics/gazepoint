@@ -257,7 +257,7 @@ class OpenGazeTracker:
                 continue
 
             # Split the messages (they are separated by '\r\n').
-            messages = instring.split('\r\n')
+            messages = instring.split(b'\r\n')
 
             # Check if there is currently an unfinished message.
             if self._unfinished:
@@ -309,7 +309,6 @@ class OpenGazeTracker:
         return
 
     def _process_outgoing(self):
-
         while not self._sock_ready_for_closing.is_set():
 
             # Get a new command from the Queue.
@@ -328,7 +327,7 @@ class OpenGazeTracker:
             self._socklock.acquire()
             # Send the command to the OpenGaze Server.
             t = time.time()
-            self._sock.send(msg)
+            self._sock.send(msg.encode())
             # Unlock the socket again.
             self._socklock.release()
 
