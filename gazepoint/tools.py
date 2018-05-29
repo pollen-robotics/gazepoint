@@ -7,22 +7,20 @@
 #
 # simplified by Jonathan Grizou at Pollen Robotics
 
-import os
 import copy
 import time
 import socket
-import datetime
 import lxml.etree
+
 from multiprocessing import Queue
 from threading import Event, Lock, Thread
 
 # # # # #
 # OPENGAZE API WRAPPER
 
-# The OpenGazeTracker class communicates to the GazePoint Server through
-# a TCP/IP socket.
-class OpenGazeTracker:
 
+# The OpenGazeTracker class communicates to the GazePoint Server through a TCP/IP socket.
+class OpenGazeTracker:
     def __init__(self, ip='127.0.0.1', port=4242):
 
         """The OpenGazeTracker class communicates to the GazePoint
@@ -72,9 +70,9 @@ class OpenGazeTracker:
         # between two 'self._sock.recv' calls.
         self._unfinished = ''
         # Start a new Thread that processes the incoming messages.
-        self._inthread = Thread( \
-            target=self._process_incoming, \
-            name='PyGaze_OpenGazeConnection_incoming', \
+        self._inthread = Thread(
+            target=self._process_incoming,
+            name='PyGaze_OpenGazeConnection_incoming',
             args=[])
 
         # OUTGOING
@@ -85,9 +83,9 @@ class OpenGazeTracker:
         self._sock_ready_for_closing = Event()
         self._sock_ready_for_closing.clear()
         # Create a new Thread that processes the outgoing queue.
-        self._outthread = Thread( \
-            target=self._process_outgoing, \
-            name='PyGaze_OpenGazeConnection_outgoing', \
+        self._outthread = Thread(
+            target=self._process_outgoing,
+            name='PyGaze_OpenGazeConnection_outgoing',
             args=[])
         # Create a dict that will keep track of at what time which command
         # was sent.
@@ -137,7 +135,7 @@ class OpenGazeTracker:
         self.calibrate_start(True)
         # Wait for the calibration result.
         result = None
-        while result == None:
+        while result is None:
             result = self.get_calibration_result()
             time.sleep(0.1)
         # Hide the calibration window.
@@ -155,8 +153,8 @@ class OpenGazeTracker:
         elif 'NO_ID' not in self._incoming['REC'].keys():
             x = None
             y = None
-        elif ('BPOGX' not in self._incoming['REC']['NO_ID'].keys()) or \
-            ('BPOGY' not in self._incoming['REC']['NO_ID'].keys()):
+        elif ('BPOGX' not in self._incoming['REC']['NO_ID'].keys() or
+              'BPOGY' not in self._incoming['REC']['NO_ID'].keys()):
             x = None
             y = None
         else:
@@ -175,13 +173,13 @@ class OpenGazeTracker:
         # If there is no current record yet, return None.
         self._inlock.acquire()
         if 'REC' not in self._incoming.keys():
-            psize =  None
+            psize = None
         elif 'NO_ID' not in self._incoming['REC'].keys():
             psize = None
-        elif ('LPV' not in self._incoming['REC']['NO_ID'].keys()) or \
-            ('LPS' not in self._incoming['REC']['NO_ID'].keys()) or \
-            ('RPV' not in self._incoming['REC']['NO_ID'].keys()) or \
-            ('RPS' not in self._incoming['REC']['NO_ID'].keys()):
+        elif ('LPV' not in self._incoming['REC']['NO_ID'].keys() or
+              'LPS' not in self._incoming['REC']['NO_ID'].keys() or
+              'RPV' not in self._incoming['REC']['NO_ID'].keys() or
+              'RPS' not in self._incoming['REC']['NO_ID'].keys()):
             psize = None
 
         # Compute the pupil size, and return it if there is valid data.
@@ -300,11 +298,9 @@ class OpenGazeTracker:
                         self._incoming[command][msgdict['ID']] = {}
                     # Add receiving time stamp, and the values for each
                     # parameter to the current dict.
-                    self._incoming[command][msgdict['ID']]['t'] = \
-                        copy.copy(t)
+                    self._incoming[command][msgdict['ID']]['t'] = copy.copy(t)
                     for par, val in msgdict.items():
-                        self._incoming[command][msgdict['ID']][par] = \
-                            copy.copy(val)
+                        self._incoming[command][msgdict['ID']][par] = copy.copy(val)
                     # Unlock the incoming dict again.
                     self._inlock.release()
                 except:
@@ -343,8 +339,8 @@ class OpenGazeTracker:
 
         return
 
-    def _send_message(self, command, ID, values=None, \
-        wait_for_acknowledgement=True, resend_timeout=3.0, maxwait=9.0):
+    def _send_message(self, command, ID, values=None,
+                      wait_for_acknowledgement=True, resend_timeout=3.0, maxwait=9.0):
 
         # Format a message in an XML format that the Open Gaze API needs.
         msg = self._format_msg(command, ID, values=values)
@@ -363,11 +359,8 @@ class OpenGazeTracker:
             if wait_for_acknowledgement:
                 sent = False
                 t1 = time.time()
-                while (time.time() - t1 < resend_timeout) and \
-                    (not acknowledged):
-
-                    # Check the outgoing queue for the sent message to
-                    # appear.
+                while (time.time() - t1 < resend_timeout) and (not acknowledged):
+                    # Check the outgoing queue for the sent message to appear.
                     if not sent:
                         self._outlock.acquire()
                         if msg in self._outlatest.keys():
@@ -389,8 +382,7 @@ class OpenGazeTracker:
                         time.sleep(0.001)
 
                     # Check if there is a timeout.
-                    if (not acknowledged) and \
-                        (time.time() - t0 > maxwait):
+                    if (not acknowledged) and (time.time() - t0 > maxwait):
                         timeout = True
                         break
 
@@ -401,9 +393,7 @@ class OpenGazeTracker:
 
         return acknowledged, timeout
 
-
     def close(self):
-
         """Closes the connection to the tracker, closes the log files, and
         ends the Threads that process the incoming and outgoing messages,
         and the logging of samples.
@@ -435,13 +425,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'ENABLE_SEND_DATA', \
-            values=[('STATE', int(state))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'ENABLE_SEND_DATA', values=[('STATE', int(state))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def enable_send_counter(self, state):
 
@@ -450,13 +437,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'ENABLE_SEND_COUNTER', \
-            values=[('STATE', int(state))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'ENABLE_SEND_COUNTER', values=[('STATE', int(state))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def enable_send_time(self, state):
 
@@ -465,13 +449,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'ENABLE_SEND_TIME', \
-            values=[('STATE', int(state))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'ENABLE_SEND_TIME', values=[('STATE', int(state))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def enable_send_time_tick(self, state):
 
@@ -480,13 +461,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'ENABLE_SEND_TIME_TICK', \
-            values=[('STATE', int(state))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'ENABLE_SEND_TIME_TICK', values=[('STATE', int(state))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def enable_send_pog_fix(self, state):
 
@@ -496,13 +474,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'ENABLE_SEND_POG_FIX', \
-            values=[('STATE', int(state))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'ENABLE_SEND_POG_FIX', values=[('STATE', int(state))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def enable_send_pog_left(self, state):
 
@@ -511,13 +486,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'ENABLE_SEND_POG_LEFT', \
-            values=[('STATE', int(state))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'ENABLE_SEND_POG_LEFT', values=[('STATE', int(state))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def enable_send_pog_right(self, state):
 
@@ -526,13 +498,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'ENABLE_SEND_POG_RIGHT', \
-            values=[('STATE', int(state))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'ENABLE_SEND_POG_RIGHT', values=[('STATE', int(state))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def enable_send_pog_best(self, state):
 
@@ -543,13 +512,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'ENABLE_SEND_POG_BEST', \
-            values=[('STATE', int(state))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'ENABLE_SEND_POG_BEST', values=[('STATE', int(state))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def enable_send_pupil_left(self, state):
 
@@ -570,13 +536,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'ENABLE_SEND_PUPIL_LEFT', \
-            values=[('STATE', int(state))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'ENABLE_SEND_PUPIL_LEFT', values=[('STATE', int(state))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def enable_send_pupil_right(self, state):
 
@@ -597,13 +560,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'ENABLE_SEND_PUPIL_RIGHT', \
-            values=[('STATE', int(state))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'ENABLE_SEND_PUPIL_RIGHT', values=[('STATE', int(state))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def enable_send_eye_left(self, state):
 
@@ -622,13 +582,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'ENABLE_SEND_EYE_LEFT', \
-            values=[('STATE', int(state))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'ENABLE_SEND_EYE_LEFT', values=[('STATE', int(state))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def enable_send_eye_right(self, state):
 
@@ -647,13 +604,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'ENABLE_SEND_EYE_RIGHT', \
-            values=[('STATE', int(state))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'ENABLE_SEND_EYE_RIGHT', values=[('STATE', int(state))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def enable_send_cursor(self, state):
 
@@ -669,13 +623,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'ENABLE_SEND_CURSOR', \
-            values=[('STATE', int(state))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'ENABLE_SEND_CURSOR', values=[('STATE', int(state))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def enable_send_user_data(self, state):
 
@@ -685,13 +636,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'ENABLE_SEND_USER_DATA', \
-            values=[('STATE', int(state))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'ENABLE_SEND_USER_DATA', values=[('STATE', int(state))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def calibrate_start(self, state):
 
@@ -708,13 +656,10 @@ class OpenGazeTracker:
             self._current_calibration_point = None
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'CALIBRATE_START', \
-            values=[('STATE', int(state))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'CALIBRATE_START', values=[('STATE', int(state))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def calibrate_show(self, state):
 
@@ -724,13 +669,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'CALIBRATE_SHOW', \
-            values=[('STATE', int(state))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'CALIBRATE_SHOW', values=[('STATE', int(state))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def calibrate_timeout(self, value):
 
@@ -739,13 +681,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'CALIBRATE_TIMEOUT', \
-            values=[('VALUE', float(value))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'CALIBRATE_TIMEOUT', values=[('VALUE', float(value))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def calibrate_delay(self, value):
 
@@ -755,13 +694,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'CALIBRATE_DELAY', \
-            values=[('VALUE', float(value))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'CALIBRATE_DELAY', values=[('VALUE', float(value))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def calibrate_result_summary(self):
 
@@ -772,19 +708,16 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('GET', \
-            'CALIBRATE_RESULT_SUMMARY', \
-            values=None, \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('GET', 'CALIBRATE_RESULT_SUMMARY', values=None, wait_for_acknowledgement=True)
 
         # Return the results.
         ave_error = None
         valid_points = None
         if acknowledged:
             self._inlock.acquire()
-            ave_error = copy.copy( \
+            ave_error = copy.copy(
                 self._incoming['ACK']['CALIBRATE_RESULT_SUMMARY']['AVE_ERROR'])
-            valid_points = copy.copy( \
+            valid_points = copy.copy(
                 self._incoming['ACK']['CALIBRATE_RESULT_SUMMARY']['VALID_POINTS'])
             self._inlock.release()
 
@@ -796,13 +729,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'CALIBRATE_CLEAR', \
-            values=None, \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'CALIBRATE_CLEAR', values=None, wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def calibrate_reset(self):
 
@@ -811,13 +741,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'CALIBRATE_RESET', \
-            values=None, \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'CALIBRATE_RESET', values=None, wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def calibrate_addpoint(self, x, y):
 
@@ -828,13 +755,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'CALIBRATE_ADDPOINT', \
-            values=[('X', x), ('Y', y)], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'CALIBRATE_ADDPOINT', values=[('X', x), ('Y', y)], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def get_calibration_points(self):
 
@@ -842,10 +766,7 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('GET', \
-            'CALIBRATE_ADDPOINT', \
-            values=None, \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('GET', 'CALIBRATE_ADDPOINT', values=None, wait_for_acknowledgement=True)
 
         # Return the result.
         points = None
@@ -853,12 +774,12 @@ class OpenGazeTracker:
             points = []
             self._inlock.acquire()
             for i in range(self._incoming['ACK']['CALIBRATE_ADDPOINT']['PTS']):
-                points.append( \
-                    copy.copy(float( \
-                        self._incoming['ACK']['CALIBRATE_ADDPOINT']['X%d' % i+1])), \
-                    copy.copy(float( \
-                        self._incoming['ACK']['CALIBRATE_ADDPOINT']['Y%d' % i+1])) \
-                    )
+                points.append(
+                    copy.copy(float(
+                        self._incoming['ACK']['CALIBRATE_ADDPOINT']['X%d' % i + 1])),
+                    copy.copy(float(
+                        self._incoming['ACK']['CALIBRATE_ADDPOINT']['Y%d' % i + 1]))
+                )
             self._inlock.release()
 
         return points
@@ -910,7 +831,7 @@ class OpenGazeTracker:
                 n_points = (len(cal.keys()) - 1) // len(params)
                 # Put the results in a different format.
                 points = []
-                for i in range(1, n_points+1):
+                for i in range(1, n_points + 1):
                     p = {}
                     for par in params:
                         if par in ['LV', 'RV']:
@@ -942,10 +863,10 @@ class OpenGazeTracker:
             self._inlock.acquire()
             if 'ACK' in self._incoming.keys():
                 if 'CALIBRATE_START' in self._incoming['ACK'].keys():
-                    t0 = copy.copy( \
+                    t0 = copy.copy(
                         self._incoming['ACK']['CALIBRATE_START']['t'])
             self._inlock.release()
-            if t0 == None:
+            if t0 is None:
                 time.sleep(0.001)
 
         # Return None if there was no calibration start.
@@ -963,7 +884,7 @@ class OpenGazeTracker:
             self._inlock.acquire()
             if 'CAL' in self._incoming.keys():
                 if 'CALIB_START_PT' in self._incoming['CAL'].keys():
-                    t1 = copy.copy( \
+                    t1 = copy.copy(
                         self._incoming['CAL']['CALIB_START_PT']['t'])
             self._inlock.release()
             # Check if the point is later than the most recent
@@ -1000,13 +921,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'USER_DATA', \
-            values=[('VALUE', str(value))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'USER_DATA', values=[('VALUE', str(value))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def tracker_display(self, state):
 
@@ -1015,13 +933,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'TRACKER_DISPLAY', \
-            values=[('STATE', int(state))], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'TRACKER_DISPLAY', values=[('STATE', int(state))], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def time_tick_frequency(self):
 
@@ -1038,10 +953,7 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('GET', \
-            'TIME_TICK_FREQUENCY', \
-            values=None, \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('GET', 'TIME_TICK_FREQUENCY', values=None, wait_for_acknowledgement=True)
 
         # Return the result.
         freq = None
@@ -1060,13 +972,10 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('SET', \
-            'SCREEN_SIZE', \
-            values=[('X', x), ('Y', x), ('WIDTH', w), ('HEIGHT', h)], \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('SET', 'SCREEN_SIZE', values=[('X', x), ('Y', x), ('WIDTH', w), ('HEIGHT', h)], wait_for_acknowledgement=True)
 
         # Return a success Boolean.
-        return acknowledged and (timeout==False)
+        return acknowledged and (timeout is False)
 
     def get_screen_size(self):
 
@@ -1076,10 +985,7 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('GET', \
-            'SCREEN_SIZE', \
-            values=None, \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('GET', 'SCREEN_SIZE', values=None, wait_for_acknowledgement=True)
 
         # Return the result.
         x = None
@@ -1109,10 +1015,7 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('GET', \
-            'CAMERA_SIZE', \
-            values=None, \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('GET', 'CAMERA_SIZE', values=None, wait_for_acknowledgement=True)
 
         # Return the result.
         w = None
@@ -1138,10 +1041,7 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('GET', \
-            'PRODUCT_ID', \
-            values=None, \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('GET', 'PRODUCT_ID', values=None, wait_for_acknowledgement=True)
 
         # Return the result.
         value = None
@@ -1165,10 +1065,7 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('GET', \
-            'SERIAL_ID', \
-            values=None, \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('GET', 'SERIAL_ID', values=None, wait_for_acknowledgement=True)
 
         # Return the result.
         value = None
@@ -1194,10 +1091,7 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('GET', \
-            'COMPANY_ID', \
-            values=None, \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('GET', 'COMPANY_ID', values=None, wait_for_acknowledgement=True)
 
         # Return the result.
         value = None
@@ -1221,10 +1115,7 @@ class OpenGazeTracker:
         """
 
         # Send the message (returns after the Server acknowledges receipt).
-        acknowledged, timeout = self._send_message('GET', \
-            'API_ID', \
-            values=None, \
-            wait_for_acknowledgement=True)
+        acknowledged, timeout = self._send_message('GET', 'API_ID', values=None, wait_for_acknowledgement=True)
 
         # Return the result.
         value = None
